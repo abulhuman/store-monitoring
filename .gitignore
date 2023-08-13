@@ -1,0 +1,7 @@
+.env
+legacy__sequelize.py
+count_lines.py
+processed.csv
+*.py.swp
+data_source/*
+.idea/*
