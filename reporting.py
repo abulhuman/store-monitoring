@@ -180,7 +180,6 @@ def generate_report_data(connection, report_id) -> None:
     cursor.execute("""
         SELECT "store_id", "timezone"
         FROM "StoreTimezones"
-        LIMIT 5000
     """)
 
     stores: StoreTimezoneListRaw = cursor.fetchall()

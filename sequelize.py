@@ -155,7 +155,7 @@ def create_tables(create_table_connection):
     def create_data_progress_db(cursor):
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS "_DataProgress" (
-            "id" INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            "id" SERIAL NOT NULL PRIMARY KEY,
             "timezones_populated" BOOLEAN NOT NULL DEFAULT FALSE,
             "business_hours_populated" BOOLEAN NOT NULL DEFAULT FALSE,
             "store_status_populated" BOOLEAN NOT NULL DEFAULT FALSE
@@ -195,12 +195,11 @@ def create_tables(create_table_connection):
         create_table_connection.commit()
 
     def create_store_status_db(cursor):
-        # TODO: change status to enum(active,inactive)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS "StoreStatus" (
             "id" BIGSERIAL NOT NULL PRIMARY KEY,
             "store_id" BIGINT NOT NULL,
-            "status" ENUM('active', 'inactive') NOT NULL,
+            "status" TEXT NOT NULL,
             "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
         
             FOREIGN KEY ("store_id") REFERENCES "StoreTimezones"("store_id") ON DELETE RESTRICT ON UPDATE CASCADE

@@ -8,7 +8,7 @@ i:
 
 .PHONY: sequelize
 sequelize:
-	poetry run python sequelize.
+	poetry run python sequelize.py
 
 .PHONY: run
 run:
