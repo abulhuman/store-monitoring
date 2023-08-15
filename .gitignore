@@ -5,3 +5,4 @@ processed.csv
 *.py.swp
 data_source/*
 .idea/*
+__pycache__/*

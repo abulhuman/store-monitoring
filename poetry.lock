@@ -429,6 +429,16 @@ anyio = ">=3.4.0,<5"
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
 
 [[package]]
+name = "timestamp"
+version = "0.0.1"
+description = "shortcut for converting datetime to timestamp"
+optional = false
+python-versions = "*"
+files = [
+    {file = "timestamp-0.0.1.tar.gz", hash = "sha256:b5c7a4539f0d8742b7d6c78febd241ab24903c73c38045690725220ca7eae4ac"},
+]
+
+[[package]]
 name = "tqdm"
 version = "4.66.1"
 description = "Fast, Extensible Progress Meter"
@@ -492,4 +502,4 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "579613801b8d5de1bbf9edfc04cc950601853ba2e7314a35b26160e904bdcf7f"
+content-hash = "2d4bb9e5b79426a5877260c0d68faecdedff72eef65dde33ebf4f4a5bc8bbfae"

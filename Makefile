@@ -10,3 +10,6 @@ i:
 sequelize:
 	poetry run python sequelize.
 
+.PHONY: run
+run:
+	poetry run uvicorn api:app --reload

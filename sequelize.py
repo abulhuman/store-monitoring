@@ -31,7 +31,6 @@ def process_business_hours():
 def insert_business_hours(business_hours_connection, processed_business_hours_dataframe):
     cursor = business_hours_connection.cursor()
     skip_insertion = is_table_populated(business_hours_connection, 'business_hours_populated')
-    print("insert business hours -> skip_insertion", skip_insertion)
     if skip_insertion:
         return
     def repair_business_hours_record(repair_business_hours_connection, business_hours_row):
@@ -82,7 +81,6 @@ def process_store_status():
 def insert_store_status(store_status_connection, processed_store_status_dataframe):
     cursor = store_status_connection.cursor()
     skip_insertion = is_table_populated(store_status_connection, 'store_status_populated')
-    print("insert store status -> skip_insertion", skip_insertion)
     if skip_insertion:
         return
     def repair_store_status_record(repair_store_status_connection, store_status_row):
@@ -139,7 +137,6 @@ def process_timezones():
 def insert_timezones(timezones_connection, processed_timezones_dataframe):
     cursor = timezones_connection.cursor()
     skip_insertion = is_table_populated(timezones_connection, 'timezones_populated')
-    print("insert timezones -> skip_insertion", skip_insertion)
     if skip_insertion:
         return
     for row in tqdm(np.array(processed_timezones_dataframe), smoothing=0.9):
@@ -152,18 +149,16 @@ def insert_timezones(timezones_connection, processed_timezones_dataframe):
     cursor.close()
 
 
-def prepare_datastore(create_table_connection):
+def create_tables(create_table_connection):
     _cursor = create_table_connection.cursor()
 
     def create_data_progress_db(cursor):
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS "_DataProgress" (
-            "id" INT NOT NULL,
+            "id" INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             "timezones_populated" BOOLEAN NOT NULL DEFAULT FALSE,
             "business_hours_populated" BOOLEAN NOT NULL DEFAULT FALSE,
-            "store_status_populated" BOOLEAN NOT NULL DEFAULT FALSE,
-            
-            CONSTRAINT "_DataProgress_pkey" PRIMARY KEY ("id")
+            "store_status_populated" BOOLEAN NOT NULL DEFAULT FALSE
         );
         """)
         create_table_connection.commit()
@@ -176,10 +171,8 @@ def prepare_datastore(create_table_connection):
     def create_store_timezones_db(cursor):
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS "StoreTimezones" (
-            "store_id" BIGINT NOT NULL,
-            "timezone" TEXT NOT NULL,
-            
-            CONSTRAINT "StoreTimezones_pkey" PRIMARY KEY ("store_id")
+            "store_id" BIGINT NOT NULL PRIMARY KEY,
+            "timezone" TEXT NOT NULL
         );
         """)
         create_table_connection.commit()
@@ -187,28 +180,30 @@ def prepare_datastore(create_table_connection):
     def create_store_business_hours_db(cursor):
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS "StoreBusinessHours" (
-            "id" BIGSERIAL NOT NULL,
+            "id" BIGSERIAL NOT NULL PRIMARY KEY,
             "store_id" BIGINT,
-            "day_of_week" TEXT NOT NULL,
-            "start_time_local" TEXT NOT NULL,
-            "end_time_local" TEXT NOT NULL,
+            "day_of_week" INT NOT NULL,
+            "start_time_local" TIME NOT NULL,
+            "end_time_local" TIME NOT NULL,
+            
+            FOREIGN KEY ("store_id") REFERENCES "StoreTimezones"("store_id") ON DELETE RESTRICT ON UPDATE CASCADE,
         
-            CONSTRAINT "StoreBusinessHours_pkey" PRIMARY KEY ("id"),
-            CONSTRAINT "StoreBusinessHours_storeId_fkey" FOREIGN KEY ("store_id") REFERENCES "StoreTimezones"("store_id") ON DELETE RESTRICT ON UPDATE CASCADE
+            CONSTRAINT "StoreBusinessHours_day_of_week_check" CHECK (day_of_week >= 0 AND day_of_week <= 6),
+            CONSTRAINT "StoreBusinessHours_start_time_local_check" CHECK (start_time_local < end_time_local)
         );
         """)
         create_table_connection.commit()
 
     def create_store_status_db(cursor):
+        # TODO: change status to enum(active,inactive)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS "StoreStatus" (
-            "id" BIGSERIAL NOT NULL,
+            "id" BIGSERIAL NOT NULL PRIMARY KEY,
             "store_id" BIGINT NOT NULL,
-            "status" TEXT NOT NULL,
-            "timestamp" TEXT NOT NULL,
+            "status" ENUM('active', 'inactive') NOT NULL,
+            "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
         
-            CONSTRAINT "StoreStatus_pkey" PRIMARY KEY ("id"),
-            CONSTRAINT "StoreStatus_storeId_fkey" FOREIGN KEY ("store_id") REFERENCES "StoreTimezones"("store_id") ON DELETE RESTRICT ON UPDATE CASCADE
+            FOREIGN KEY ("store_id") REFERENCES "StoreTimezones"("store_id") ON DELETE RESTRICT ON UPDATE CASCADE
         );
         """)
         create_table_connection.commit()
@@ -220,23 +215,26 @@ def prepare_datastore(create_table_connection):
     _cursor.close()
     print('Datastore prepared!')
 
+def populate_tables(connection):
+    processed_timezones = process_timezones()
+    insert_timezones(connection, processed_timezones)
+    processed_business_hours = process_business_hours()
+    insert_business_hours(connection, processed_business_hours)
+    processed_store_status = process_store_status()
+    insert_store_status(connection, processed_store_status)
+
 
 print('Connecting to the database...')
 # Connect to the database
-connection = psycopg2.connect(
+_connection = psycopg2.connect(
     host="localhost",
     database="loop_datastore_db",
     user="loop_datastore_admin",
     password="top_secret"
 )
 print('Connected!')
-prepare_datastore(connection)
-processed_timezones = process_timezones()
-insert_timezones(connection, processed_timezones)
-processed_business_hours = process_business_hours()
-insert_business_hours(connection, processed_business_hours)
-processed_store_status = process_store_status()
-insert_store_status(connection, processed_store_status)
+create_tables(_connection)
+populate_tables(_connection)
 print('Operation completed!!!')
 print('Closing DB connection.')
-connection.close()
+_connection.close()
